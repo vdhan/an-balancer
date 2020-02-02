@@ -1,6 +1,6 @@
 # An's Balancer
 
-An's balancer calculates AI and Fight Values balancer for VCMI.  
+An's Balancer calculates AI and Fight Values balancer for VCMI.  
 Based on GrayFace and Macron1 formulas (http://wforum.heroes35.net/).
 
 This script use Python's f-format and _should_ work with Python 3.6 or later.

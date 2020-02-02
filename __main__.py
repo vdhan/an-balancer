@@ -1,6 +1,5 @@
 import argparse
 import math
-import os
 from pathlib import Path
 
 FIELDS = (
@@ -18,12 +17,6 @@ FIELDS = (
     'aiValue',
     'fightValue'
 )
-
-
-def read_specified_file(file_name):
-    with open(file_name) as f:
-        file_content = [text.strip('\n') for text in f.readlines()]
-    return file_content
 
 
 def calc_damage_coeff(attack, defence):
@@ -152,7 +145,7 @@ def get_value_from_list(file_content, seeked_string):
 
         if is_not_commented_out(line, seeked_string):
             if line.count('"') > 2:
-                continue  # eg. "attack" : "something.wav"
+                continue  # eg. "attack": "something.wav"
 
             if braces < 3:
                 text_line = line
@@ -193,28 +186,20 @@ def get_max_min_damage(file_content, property_name):
 # And not like "VALUE_NAME" : 0, "VALUE_NAME" : 0
 def replace_value(file_content, search_value, write_value):
     braces = 0
-    # todo: convert to line
     for i in range(len(file_content)):
         braces += file_content[i].count('{')
         braces -= file_content[i].count('}')
-
-        if not is_not_commented_out(file_content[i], search_value):
-            continue
-        else:
+        if is_not_commented_out(file_content[i], search_value):
             if braces < 3:
                 comment_content = ''
                 comment_pos = file_content[i].find('//')
                 if comment_pos != -1:
                     comment_content = file_content[i][comment_pos:]
 
+                has_comma = file_content[i].count(',')
                 semicolon_pos = file_content[i].find(':')
-                has_colon = file_content[i].count(',')
-
-                file_content[i] = file_content[i][:semicolon_pos + 1]
-                file_content[i] += ' '
-
-                file_content[i] += str(write_value)
-                if has_colon:
+                file_content[i] = f'{file_content[i][:semicolon_pos + 1]} {write_value}'
+                if has_comma:
                     file_content[i] += ','
 
                 file_content[i] += comment_content
@@ -223,7 +208,6 @@ def replace_value(file_content, search_value, write_value):
 # Replaces two values "max" and "min" within specified property
 def replace_value_min_max(file_content, search_value, write_min, write_max):
     found = False
-    # todo: convert to line
     for i in range(len(file_content)):
         if is_not_commented_out(file_content[i], search_value):
             found = True
@@ -231,18 +215,16 @@ def replace_value_min_max(file_content, search_value, write_min, write_max):
         # todo: change to regex method
         if found:
             if is_not_commented_out(file_content[i], FIELDS[0]):
+                str_old_max = get_max_min_damage(file_content, search_value)[0]
                 file_content[i] = file_content[i].replace(' ', '')  # get rid of spaces
-                str_old_max = str(get_max_min_damage(file_content, search_value)[0])
-                str_max_to_replace = '"max":' + str_old_max
-                file_content[i] = file_content[i].replace(str_max_to_replace, ' "max":' + str(write_max))
-                file_content[i] = file_content[i].replace(':', ' : ')
+                str_max_to_replace = f'"max":{str_old_max}'
+                file_content[i] = file_content[i].replace(str_max_to_replace, f'"max": {write_max}')
 
             if is_not_commented_out(file_content[i], FIELDS[1]):
+                str_old_min = get_max_min_damage(file_content, search_value)[1]
                 file_content[i] = file_content[i].replace(' ', '')  # get rid of spaces
-                str_old_min = str(get_max_min_damage(file_content, search_value)[1])
-                str_min_to_replace = '"min":' + str_old_min
-                file_content[i] = file_content[i].replace(str_min_to_replace, ' "min":' + str(write_min))
-                file_content[i] = file_content[i].replace(':', ' : ')
+                str_min_to_replace = f'"min":{str_old_min}'
+                file_content[i] = file_content[i].replace(str_min_to_replace, f'"min": {write_min}')
 
             if file_content[i].count('}'):
                 break
@@ -589,24 +571,12 @@ def correct_values(file_content):
     return file_content
 
 
-def is_json(file_name):
-    return file_name.lower().endswith('.json')
+def create_balanced_file(prefix, file_name):
+    with file_name.open() as f:
+        file_content = [text.strip('\n') for text in f.readlines()]
 
-
-def get_dir_or_file_name(string):
-    return os.path.basename(string)
-
-
-def write_new_file_and_close_it(file_handle, file_content):
-    for fileLines in file_content:
-        file_handle.write(fileLines + '\n')
-    file_handle.close()
-
-
-def create_balanced_file(pre, file_name):
-    file_content = read_specified_file(file_name)
     file_content = correct_values(file_content)
-    balanced_file = Path(f'{pre}/{file_name}')
+    balanced_file = Path(f'{prefix}/{file_name}')
     with balanced_file.open('w') as f:
         for line in file_content:
             f.write(f'{line}\n')
@@ -642,5 +612,7 @@ if __name__ == '__main__':
                     create_balanced_file(PREFIX, file)
         elif path.is_file():
             create_balanced_file(PREFIX, path)
+        else:
+            print(f'Warning: {path} is not file nor directory')
 
     print('Done.')
