@@ -1,5 +1,6 @@
 import argparse
 import math
+import re
 from pathlib import Path
 
 FIELDS = (
@@ -162,7 +163,7 @@ def get_boolean_ability_existence(file_content, seeked_string):
     return False
 
 
-def get_max_min_damage(file_content, property_name):
+def get_min_max_damage(file_content, property_name):
     minimum = maximum = -1
     found = False
     for line in file_content:
@@ -179,7 +180,7 @@ def get_max_min_damage(file_content, property_name):
             if '}' in line:
                 found = False
 
-    return maximum, minimum
+    return minimum, maximum
 
 
 # Replaces value which must be formatted like "VALUE_NAME" : 0,
@@ -212,19 +213,16 @@ def replace_value_min_max(file_content, search_value, write_min, write_max):
         if is_not_commented_out(file_content[i], search_value):
             found = True
 
-        # todo: change to regex method
         if found:
-            if is_not_commented_out(file_content[i], FIELDS[0]):
-                str_old_max = get_max_min_damage(file_content, search_value)[0]
-                file_content[i] = file_content[i].replace(' ', '')  # get rid of spaces
-                str_max_to_replace = f'"max":{str_old_max}'
-                file_content[i] = file_content[i].replace(str_max_to_replace, f'"max": {write_max}')
-
             if is_not_commented_out(file_content[i], FIELDS[1]):
-                str_old_min = get_max_min_damage(file_content, search_value)[1]
-                file_content[i] = file_content[i].replace(' ', '')  # get rid of spaces
-                str_min_to_replace = f'"min":{str_old_min}'
-                file_content[i] = file_content[i].replace(str_min_to_replace, f'"min": {write_min}')
+                str_old_min = get_min_max_damage(file_content, search_value)[0]
+                pattern = re.compile(r'"min"\s*:\s*' + str(str_old_min))
+                file_content[i] = pattern.sub(f'"min": {write_min}', file_content[i])
+
+            if is_not_commented_out(file_content[i], FIELDS[0]):
+                str_old_max = get_min_max_damage(file_content, search_value)[1]
+                pattern = re.compile(r'"max"\s*:\s*' + str(str_old_max))
+                file_content[i] = pattern.sub(f'"max": {write_max}', file_content[i])
 
             if file_content[i].count('}'):
                 break
@@ -239,41 +237,24 @@ def balance_procedure(file_content, params):
         else:
             return value
 
+    level = params[5]
+    if level <= 0 or level > 7:
+        return params
+
     attack_skill = params[0]
     defence_skill = params[1]
     hit_points = params[2]
     max_damage = params[3]
     min_damage = params[4]
-    level = params[5]
-    if level <= 0 or level > 7:
-        return params
-
-    # todo: merge with level 1
-    if attack_skill < 0:
-        attack_skill = 0
-    if defence_skill < 0:
-        defence_skill = 0
-    if min_damage < 0:
-        min_damage = 0
-    if max_damage < 0:
-        max_damage = 0
-    if hit_points < 0:
-        hit_points = 1
-
     if level == 1:
-        if attack_skill > 7:
-            attack_skill = 7
-        if defence_skill > 7:
-            defence_skill = 7
-        if max_damage > 4:
-            max_damage = 4
-        if min_damage > max_damage:
-            min_damage = max_damage - 1
-        if hit_points > 11:
-            hit_points = 11
+        attack_skill = correct_value_within_range(attack_skill, 1, 7)
+        defence_skill = correct_value_within_range(defence_skill, 1, 7)
+        max_damage = correct_value_within_range(max_damage, 1, 4)
+        min_damage = correct_value_within_range(min_damage, 1, max_damage)
+        hit_points = correct_value_within_range(hit_points, 1, 11)
     elif level == 2:
         attack_skill = correct_value_within_range(attack_skill, 4, 10)
-        defence_skill = correct_value_within_range(defence_skill, 2, 7)
+        defence_skill = correct_value_within_range(defence_skill, 2, 10)
         max_damage = correct_value_within_range(max_damage, 3, 5)
         min_damage = correct_value_within_range(min_damage, 1, max_damage)
         hit_points = correct_value_within_range(hit_points, 9, 16)
@@ -285,7 +266,7 @@ def balance_procedure(file_content, params):
         hit_points = correct_value_within_range(hit_points, 16, 38)
     elif level == 4:
         attack_skill = correct_value_within_range(attack_skill, 6, 14)
-        defence_skill = correct_value_within_range(defence_skill, 6, 13)
+        defence_skill = correct_value_within_range(defence_skill, 6, 14)
         max_damage = correct_value_within_range(max_damage, 5, 13)
         min_damage = correct_value_within_range(min_damage, 2, max_damage)
         hit_points = correct_value_within_range(hit_points, 18, 66)
@@ -301,7 +282,7 @@ def balance_procedure(file_content, params):
         max_damage = correct_value_within_range(max_damage, 9, 33)
         min_damage = correct_value_within_range(min_damage, 9, max_damage)
         hit_points = correct_value_within_range(hit_points, 63, 132)
-    elif level == 7:
+    else:
         attack_skill = correct_value_within_range(attack_skill, 15, 33)
         defence_skill = correct_value_within_range(defence_skill, 15, 33)
         max_damage = correct_value_within_range(max_damage, 23, 66)
@@ -331,38 +312,7 @@ def get_value_of_ability(file_content):
     return -1
 
 
-# Main procedure balancing files
-def correct_values(file_content):
-    level = get_value_from_list(file_content, FIELDS[3])
-    defence_skill = get_value_from_list(file_content, FIELDS[5])
-    attack_skill = get_value_from_list(file_content, FIELDS[4])
-    hit_points = get_value_from_list(file_content, FIELDS[6])
-    speed = get_value_from_list(file_content, FIELDS[8])
-
-    is_two_hex = get_boolean_ability_existence(file_content, 'TWO_HEX_BREATH_ATTACK')
-    is_poison = get_boolean_ability_existence(file_content, 'POISON')
-    is_acid_breath = get_boolean_ability_existence(file_content, 'ACID_BREATH')
-    is_double_damage = get_boolean_ability_existence(file_content, 'DOUBLE_DAMAGE_CHANCE')
-    is_minimum_damage = get_boolean_ability_existence(file_content, 'ALWAYS_MINIMUM_DAMAGE')
-    is_maximum_damage = get_boolean_ability_existence(file_content, 'ALWAYS_MAXIMUM_DAMAGE')
-    is_additional_attack = get_boolean_ability_existence(file_content, 'ADDITIONAL_ATTACK')
-    is_three_headed_attack = get_boolean_ability_existence(file_content, 'THREE_HEADED_ATTACK')
-    is_attacks_all_adjacent = get_boolean_ability_existence(file_content, 'ATTACKS_ALL_ADJACENT')
-    is_enemy_defence_reduction = get_boolean_ability_existence(file_content, 'ENEMY_DEFENCE_REDUCTION')
-    is_general_attack_reduction = get_boolean_ability_existence(file_content, 'GENERAL_ATTACK_REDUCTION')
-
-    min_max = get_max_min_damage(file_content, FIELDS[7])
-    min_damage = min_max[1]
-    max_damage = min_max[0]
-
-    params = [attack_skill, defence_skill, hit_points, max_damage, min_damage, level]
-    out_params = balance_procedure(file_content, params)
-    attack_skill = out_params[0]
-    defence_skill = out_params[1]
-    hit_points = out_params[2]
-    max_damage = out_params[3]
-    min_damage = out_params[4]
-
+def rebalance_quantity(file_content, level):
     is_upgraded = not get_boolean_ability_existence(file_content, FIELDS[9])
     min_quantity = max_quantity = 0
     if level == 1:
@@ -416,6 +366,39 @@ def correct_values(file_content):
             min_quantity = 4
 
     replace_value_min_max(file_content, FIELDS[10], min_quantity, max_quantity)
+
+
+# Main procedure balancing files
+def correct_values(file_content):
+    level = get_value_from_list(file_content, FIELDS[3])
+    attack_skill = get_value_from_list(file_content, FIELDS[4])
+    defence_skill = get_value_from_list(file_content, FIELDS[5])
+    hit_points = get_value_from_list(file_content, FIELDS[6])
+    speed = get_value_from_list(file_content, FIELDS[8])
+
+    min_max = get_min_max_damage(file_content, FIELDS[7])
+    min_damage = min_max[0]
+    max_damage = min_max[1]
+
+    params = [attack_skill, defence_skill, hit_points, max_damage, min_damage, level]
+    out_params = balance_procedure(file_content, params)
+    attack_skill = out_params[0]
+    defence_skill = out_params[1]
+    hit_points = out_params[2]
+    max_damage = out_params[3]
+    min_damage = out_params[4]
+
+    is_two_hex = get_boolean_ability_existence(file_content, 'TWO_HEX_BREATH_ATTACK')
+    is_poison = get_boolean_ability_existence(file_content, 'POISON')
+    is_acid_breath = get_boolean_ability_existence(file_content, 'ACID_BREATH')
+    is_double_damage = get_boolean_ability_existence(file_content, 'DOUBLE_DAMAGE_CHANCE')
+    is_minimum_damage = get_boolean_ability_existence(file_content, 'ALWAYS_MINIMUM_DAMAGE')
+    is_maximum_damage = get_boolean_ability_existence(file_content, 'ALWAYS_MAXIMUM_DAMAGE')
+    is_additional_attack = get_boolean_ability_existence(file_content, 'ADDITIONAL_ATTACK')
+    is_three_headed_attack = get_boolean_ability_existence(file_content, 'THREE_HEADED_ATTACK')
+    is_attacks_all_adjacent = get_boolean_ability_existence(file_content, 'ATTACKS_ALL_ADJACENT')
+    is_enemy_defence_reduction = get_boolean_ability_existence(file_content, 'ENEMY_DEFENCE_REDUCTION')
+    is_general_attack_reduction = get_boolean_ability_existence(file_content, 'GENERAL_ATTACK_REDUCTION')
 
     corr_max_damage = max_damage
     corr_min_damage = min_damage
@@ -568,6 +551,7 @@ def correct_values(file_content):
 
     replace_value(file_content, FIELDS[11], int(corr_ai_value))
     replace_value(file_content, FIELDS[12], int(corr_fight_value))
+    rebalance_quantity(file_content, level)
     return file_content
 
 
