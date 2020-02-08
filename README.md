@@ -13,4 +13,8 @@ This script use Python's f-format and _should_ work with Python 3.6 or later.
 
 To install Celestial mod town for VCMI, checkout: https://github.com/vdhan/Celestial
 
-Contact me: anvudh@gmail.com
+To rebalance skills, heroes, etc., checkout: https://github.com/vdhan/An-Expansion
+
+For boosting in-game speed, copy [this](https://gist.github.com/vdhan/faccba8ff97b6cebcc3ee0c9c379e020) to user config.
+
+Contact me: https://vudachoangan.com/
