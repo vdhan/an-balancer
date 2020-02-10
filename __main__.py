@@ -549,8 +549,8 @@ def correct_values(file_content):
             corr_fight_value *= 1.1
             corr_ai_value *= 1.1
 
-    replace_value(file_content, FIELDS[11], int(corr_ai_value))
-    replace_value(file_content, FIELDS[12], int(corr_fight_value))
+    replace_value(file_content, FIELDS[11], round(corr_ai_value))
+    replace_value(file_content, FIELDS[12], round(corr_fight_value))
     rebalance_quantity(file_content, level)
     return file_content
 
