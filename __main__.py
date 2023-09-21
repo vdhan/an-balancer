@@ -388,7 +388,8 @@ def correct_values(file_content):
     max_damage = out_params[3]
     min_damage = out_params[4]
 
-    is_two_hex = get_boolean_ability_existence(file_content, 'TWO_HEX_BREATH_ATTACK')
+    is_two_hex = get_boolean_ability_existence(file_content, 'TWO_HEX_ATTACK_BREATH')
+    is_wide_breath = get_boolean_ability_existence(file_content, 'WIDE_BREATH')
     is_poison = get_boolean_ability_existence(file_content, 'POISON')
     is_acid_breath = get_boolean_ability_existence(file_content, 'ACID_BREATH')
     is_double_damage = get_boolean_ability_existence(file_content, 'DOUBLE_DAMAGE_CHANCE')
@@ -398,7 +399,9 @@ def correct_values(file_content):
     is_three_headed_attack = get_boolean_ability_existence(file_content, 'THREE_HEADED_ATTACK')
     is_attacks_all_adjacent = get_boolean_ability_existence(file_content, 'ATTACKS_ALL_ADJACENT')
     is_enemy_defence_reduction = get_boolean_ability_existence(file_content, 'ENEMY_DEFENCE_REDUCTION')
+    is_percentage_damage_boost = get_boolean_ability_existence(file_content, 'PERCENTAGE_DAMAGE_BOOST')
     is_general_attack_reduction = get_boolean_ability_existence(file_content, 'GENERAL_ATTACK_REDUCTION')
+
 
     corr_max_damage = max_damage
     corr_min_damage = min_damage
@@ -414,6 +417,8 @@ def correct_values(file_content):
         corr_max_damage *= 2
     if is_two_hex:
         corr_max_damage *= 2
+    if is_wide_breath:
+        corr_max_damage *= 2
     if is_acid_breath:
         corr_max_damage += get_value_of_ability(file_content)
     if is_poison:
@@ -426,6 +431,11 @@ def correct_values(file_content):
     enemy_defence_reduction = 0
     general_attack_reduction = 0
     if is_enemy_defence_reduction:
+        enemy_defence_reduction = get_value_of_ability(file_content) / 100
+        if enemy_defence_reduction >= 1:
+            enemy_defence_reduction = 1
+
+    if is_percentage_damage_boost:
         enemy_defence_reduction = get_value_of_ability(file_content) / 100
         if enemy_defence_reduction >= 1:
             enemy_defence_reduction = 1
@@ -453,11 +463,10 @@ def correct_values(file_content):
     '''
     abilities = (
         ['NON_LIVING', 2, 2, 0, 0, 0],
+        ['GARGOYLE', 2, 2, 0, 0, 0],
         ['UNDEAD', 2, 2, 0, 0, 0],
         ['DRAGON_NATURE', 1, 1, 0, 0, 0],
-        ['KING1', 1, 1, 0, 0, 0],
-        ['KING2', 2, 2, 0, 0, 0],
-        ['KING3', 3, 3, 0, 0, 0],
+        ['KING', 2, 2, 0, 0, 0],
         ['FEARLESS', 5, 5, 0, 0, 0],
         ['NO_LUCK', 1, 1, 0, 0, 0],
         ['NO_MORALE', 1, 1, 0, 0, 0],
@@ -478,6 +487,7 @@ def correct_values(file_content):
         ['RETURN_AFTER_STRIKE', 3, 3, 0, 0, 0],
         ['ENEMY_DEFENCE_REDUCTION', 0, 0, 0, 0, 0],
         ['GENERAL_DAMAGE_REDUCTION', 5, 5, 0, 0, 0],
+        ['PERCENTAGE_DAMAGE_BOOST', 0, 0, 0, 0, 0],
         ['GENERAL_ATTACK_REDUCTION', 0, 0, 0, 0, 0],
         ['DEFENSIVE_STANCE', 5, 5, 0, 0, 0],
         ['NO_DISTANCE_PENALTY', 7, 7, 0, 0, 0],
@@ -485,6 +495,15 @@ def correct_values(file_content):
         ['NO_WALL_PENALTY', 3, 3, 0, 0, 0],
         ['FREE_SHOOTING', 10, 10, 0, 0, 0],
         ['BLOCKS_RETALIATION', 5, 5, 0, 0, 0],
+        ['SOUL_STEAL', 5, 5, 0, 0, 0],
+        ['TRANSMUTATION', 3, 3, 0, 0, 0],
+        ['SUMMON_GUARDIANS', 10, 10, 0, 0, 0],
+        ['RANGED_RETALIATION', 7, 7, 0, 0, 0],
+        ['BLOCKS_RANGED_RETALIATION', 3, 3, 0, 0, 0],
+        ['WIDE_BREATH', 0, 0, 0, 0, 0],
+        ['FIRST_STRIKE', 7, 7, 0, 0, 0],
+        ['SHOOTS_ALL_ADJACENT', 3, 3, 0, 0, 0],
+        ['DESTRUCTION', 10, 10, 0, 0, 0],
         ['CATAPULT', 10, 10, 0, 0, 0],
         ['CHANGES_SPELL_COST_FOR_ALLY', 7, 7, 0, 0, 0],
         ['CHANGES_SPELL_COST_FOR_ENEMY', 7, 7, 0, 0, 0],
@@ -510,7 +529,6 @@ def correct_values(file_content):
         ['SPECIFIC_SPELL_POWER', 0, 0, 0, 0, 0],
         ['CREATURE_SPELL_POWER', 0, 0, 0, 0, 0],
         ['CREATURE_ENCHANT_POWER', 0, 0, 0, 0, 0],
-        ['DAEMON_SUMMONING', 7, 7, 0, 0, 0],
         ['REBIRTH', 5, 5, 0, 0, 0],
         ['ENCHANTED', 5, 5, 0, 0, 0],
         ['LEVEL_SPELL_IMMUNITY', 10, 10, 0, 0, 0],
@@ -520,6 +538,7 @@ def correct_values(file_content):
         ['WATER_IMMUNITY', 2, 2, 0, 0, 0],
         ['EARTH_IMMUNITY', 2, 2, 0, 0, 0],
         ['AIR_IMMUNITY', 2, 2, 0, 0, 0],
+        ['FIRE_IMMUNITY', 2, 2, 0, 0, 0],
         ['MIND_IMMUNITY', 2, 2, 0, 0, 0],
         ['SPELL_IMMUNITY', 1, 1, 0, 0, 0],
         ['DIRECT_DAMAGE_IMMUNITY', 10, 10, 0, 0, 0],
