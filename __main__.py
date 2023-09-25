@@ -402,7 +402,6 @@ def correct_values(file_content):
     is_percentage_damage_boost = get_boolean_ability_existence(file_content, 'PERCENTAGE_DAMAGE_BOOST')
     is_general_attack_reduction = get_boolean_ability_existence(file_content, 'GENERAL_ATTACK_REDUCTION')
 
-
     corr_max_damage = max_damage
     corr_min_damage = min_damage
     if is_minimum_damage:
